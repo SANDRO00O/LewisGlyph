@@ -1,0 +1,65 @@
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LewisGlyph — Typography Generator</title>
+  <meta name="description" content="LewisGlyph — Square base typography generator.">
+  <link rel="stylesheet" href="assets/css/style.css" type="text/css" media="all" />
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>LewisGlyph</h1>
+        <div class="subtitle">Square base typography</div>
+      </div>
+    </header>
+    
+    <div class="layout">
+      <div class="panel">
+        <div class="controls">
+          <div>
+            <label for="inputText">Type your text:</label>
+            <input id="inputText" type="text" value="LewisGlyph" />
+          </div>
+          
+          <div class="row">
+            <div style="width:140px">
+              <label for="spacing">Glyph size</label>
+              <select id="spacing">
+                <option value="64">Compact</option>
+                <option value="80" selected>Normal</option>
+                <option value="110">Spacious</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="row">
+            <button class="btn" id="convertBtn">Convert</button>
+            <button class="btn secondary" id="downloadSvg">Download SVG</button>
+            <button class="btn secondary" id="downloadPng">Download PNG</button>
+          </div>
+          
+          <div style="font-size:12px;color:var(--muted)">Note: This generator uses a square base and external dots around the square to form glyphs. Output is best in uppercase; lowercase will be converted to uppercase automatically.</div>
+        </div>
+      </div>
+      
+      <div class="panel output">
+        <h3 style="margin-top:0">Output</h3>
+        <div id="renderArea" class="render-row" aria-live="polite"></div>
+      </div>
+      
+      <div class="panel output">
+        <h4 style="margin:8px 0 6px">Character set (preview)</h4>
+        <div class="charset" id="charset"></div>
+      </div>
+    </div>
+    <footer>Developed by <a href="https://karrarnazim.space">Karrar Nazim.</a></footer>
+  </div>
+  <script src="assets/js/html2canvas.min.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+
+</html>
