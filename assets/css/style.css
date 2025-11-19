@@ -8,6 +8,7 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;
     }
     
+    
     * {
       box-sizing: border-box;
       margin: 0;
@@ -40,7 +41,8 @@
       margin: 0;
       font-size: 28px;
       letter-spacing: 2px;
-      text-transform: uppercase
+      text-transform: uppercase;
+      color: #B55050;
     }
     
     .subtitle {

@@ -14,31 +14,31 @@
     ];
     
     const LETTERS = {
-      'A': [6, 8],
-      'B': [0],
+      'A': [1, 6, 8],
+      'B': [0, 8, 10],
       'C': [3, 5],
       'D': [11, 4, 9],
       'E': [3, 4, 5],
-      'F': [3, 4],
-      'G': [6],
+      'F': [3, 4, 8],
+      'G': [3, 6],
       'H': [0, 2, 6, 8],
       'I': [1],
       'J': [2, 9],
       'K': [0, 3, 5, 8],
       'L': [0, 5],
-      'M': [6, 7, 8],
+      'M': [0, 2, 6, 7, 8],
       'N': [2, 8],
-      'O': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      'O': [],
       'P': [8],
       'Q': [7],
       'R': [3, 6, 8],
       'S': [3, 9],
-      'T': [3, 11],
+      'T': [3, 7, 11],
       'U': [0, 2],
       'V': [0, 2, 7],
-      'W': [0, 1, 2],
+      'W': [0, 1, 2, 6, 8],
       'X': [3, 5, 9, 11],
-      'Y': [0, 2, 6],
+      'Y': [0, 2, 7],
       'Z': [0, 3, 9, 6],
       ' ': []
     };
@@ -53,36 +53,39 @@
     });
     
     function createGlyph(char, size = 80, small = false) {
-      const ch = (char || ' ').toString().toUpperCase();
-      const dots = LETTERS[ch] || [];
-      const ns = 'http://www.w3.org/2000/svg';
-      const svg = document.createElementNS(ns, 'svg');
-      svg.setAttribute('width', size);
-      svg.setAttribute('height', size);
-      svg.setAttribute('viewBox', '0 0 100 100');
-      svg.classList.add('glyph');
-      
-      const rect = document.createElementNS(ns, 'rect');
-      rect.setAttribute('x', 20);
-      rect.setAttribute('y', 20);
-      rect.setAttribute('width', 60);
-      rect.setAttribute('height', 60);
-      rect.setAttribute('rx', 0);
-      rect.setAttribute('fill', '#111');
-      svg.appendChild(rect);
-      
-      dots.forEach(p => {
-        const c = document.createElementNS(ns, 'circle');
-        const pos = POSITIONS[p];
-        c.setAttribute('cx', pos[0]);
-        c.setAttribute('cy', pos[1]);
-        c.setAttribute('r', 5.5);
-        c.setAttribute('fill', '#111');
-        svg.appendChild(c);
-      });
-      
-      return svg;
-    }
+  const ch = (char || ' ').toString().toUpperCase();
+  const dots = LETTERS[ch] || [];
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('width', size);
+  svg.setAttribute('height', size);
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.classList.add('glyph');
+  
+  // الحروف التي لون مربعها أحمر
+  const isRed = (ch === 'Y' || ch === ' ');
+  
+  const rect = document.createElementNS(ns, 'rect');
+  rect.setAttribute('x', 20);
+  rect.setAttribute('y', 20);
+  rect.setAttribute('width', 60);
+  rect.setAttribute('height', 60);
+  rect.setAttribute('rx', 0);
+  rect.setAttribute('fill', isRed ? '#B55050' : '#111'); // هنا التلوين الأحمر
+  svg.appendChild(rect);
+  
+  dots.forEach(p => {
+    const c = document.createElementNS(ns, 'circle');
+    const pos = POSITIONS[p];
+    c.setAttribute('cx', pos[0]);
+    c.setAttribute('cy', pos[1]);
+    c.setAttribute('r', 5.5);
+    c.setAttribute('fill', '#111');
+    svg.appendChild(c);
+  });
+  
+  return svg;
+}
     
     function renderText() {
       const txt = (inputText.value || '').toUpperCase();
