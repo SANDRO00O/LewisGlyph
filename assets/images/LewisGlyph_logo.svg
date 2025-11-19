@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <!-- خلفية بيضاء -->
+  <rect width="100%" height="100%" fill="#fff" />
+  
+  <!-- العنصر الداخلي في منتصف الـ SVG -->
+  <svg x="10" y="10" width="80" height="80" viewBox="0 0 100 100" class="glyph">
+    <rect x="20" y="20" width="60" height="60" rx="0" fill="#111" />
+    <circle cx="28%" cy="10%" r="5.5" fill="#111" />
+    <circle cx="50%" cy="10%" r="5.5" fill="#111" />
+    <circle cx="72%" cy="10%" r="5.5" fill="#111" />
+    <circle cx="88%" cy="28%" r="5.5" fill="#111" />
+    <circle cx="88%" cy="50%" r="5.5" fill="#111" />
+    <circle cx="88%" cy="72%" r="5.5" fill="#111" />
+    <circle cx="72%" cy="90%" r="5.5" fill="#111" />
+    <circle cx="50%" cy="90%" r="5.5" fill="#111" />
+    <circle cx="28%" cy="90%" r="5.5" fill="#111" />
+    <circle cx="10%" cy="72%" r="5.5" fill="#111" />
+    <circle cx="10%" cy="50%" r="5.5" fill="#111" />
+    <circle cx="10%" cy="28%" r="5.5" fill="#111" />
+  </svg>
+</svg>
