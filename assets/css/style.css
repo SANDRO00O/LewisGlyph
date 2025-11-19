@@ -34,7 +34,21 @@
       display: flex;
       align-items: center;
       gap: 18px;
-      flex-wrap: wrap
+      flex-wrap: wrap;
+    }
+    
+    header .flex {
+      display: flex;
+      align-items: center;
+    }
+    
+    header .block {
+      display: block;
+    }
+    
+    header img {
+      width: 60px;
+      height: 60px;
     }
     
     h1 {
