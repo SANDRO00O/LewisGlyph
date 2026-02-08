@@ -32,8 +32,22 @@ statusMsg.style.padding = '5px 10px';
 statusMsg.style.display = 'none';
 
 /* تنظيف النص المدخل */
+/* تنظيف النص: إنجليزي فقط + معالجة الفواصل */
 inputText.addEventListener('input', () => {
-  inputText.value = inputText.value.replace(/[0-9]/g, '');
+  inputText.value = inputText.value
+    .toUpperCase()
+    
+    // 1) حوّل العلامات التي تفصل كلمات إلى مسافة
+    .replace(/[-_.\/\\|+~=:]/g, ' ')
+    
+    // 2) احذف أي شيء غير A-Z أو مسافة
+    .replace(/[^A-Z ]/g, '')
+    
+    // 3) امنع تكرار المسافات
+    .replace(/\s+/g, ' ')
+    
+    // 4) قص المسافات من البداية والنهاية
+    .trim();
 });
 
 /* دالة إنشاء عنصر SVG واحد (للعرض في الصفحة) */

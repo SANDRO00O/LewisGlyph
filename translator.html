@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LewisGlyph Translator</title>
+  <meta name="description" content="LewisGlyph — Decode your glyphs back to text.">
+  <!-- افترضنا وجود اللوجو في نفس المسار -->
+  <link rel="icon" href="assets/images/LewisGlyph_logo.svg" type="image/svg+xml">
+  <!-- سنقوم بتضمين الستايل مباشرة لضمان العمل الفوري، ولكن يفضل فصله -->
+  <style>
+    :root {
+      --bg: #fff;
+      --fg: #111;
+      --muted: #666;
+      --accent: #B55050;
+      --card-bg: #fff;
+      --size: 72px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: .2s ease-in-out;
+    }
+    
+    html,
+    body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    
+    .wrap {
+      max-width: 1100px;
+      margin: 28px auto;
+      padding: 24px;
+    }
+    
+    header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+    }
+    
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 22px;
+    }
+    
+    .panel {
+      border: 1px solid #dcdcdc;
+      padding: 18px;
+      background: var(--card-bg);
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    /* Upload Zone Styling */
+    .upload-zone {
+      border: 2px dashed #ddd;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: #fff5f5;
+    }
+    
+    .upload-zone p {
+      color: var(--muted);
+      font-size: 14px;
+      pointer-events: none;
+    }
+    
+    input[type="file"] {
+      display: none;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: 0;
+      background: #111;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 5px;
+      font-family: inherit;
+    }
+    
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .output-section h3 {
+      margin-bottom: 12px;
+      font-size: 16px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+    
+    #decodedText {
+      width: 100%;
+      min-height: 100px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: inherit;
+      font-size: 16px;
+      white-space: pre-wrap;
+      background: #fdfdfd;
+      color: #333;
+    }
+    
+    .status-bar {
+      height: 4px;
+      background: #eee;
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 2px;
+      overflow: hidden;
+      display: none;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+    
+    footer {
+      width: 100%;
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+    
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+    
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="block">
+        <h1>LewisGlyph <span style="color:#111; font-size: 0.7em;">Translator</span></h1>
+        <div class="subtitle">Decode SVG back to text</div>
+      </div>
+    </header>
+    
+    <div class="layout">
+      <!-- Upload Panel -->
+      <div class="panel">
+        <div class="controls">
+          <div class="upload-zone" id="dropZone">
+            <p>Click to upload <b>LewisGlyph_output.svg</b> or drag it here</p>
+            <input type="file" id="fileInput" accept=".svg">
+          </div>
+          
+          <div class="status-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          
+          <div id="statusText" style="font-size: 12px; color: #666; height: 15px;"></div>
+        </div>
+      </div>
+      
+      <!-- Result Panel -->
+      <div class="panel output-section">
+        <h3>Decoded Text</h3>
+        <textarea id="decodedText" readonly placeholder="The extracted text will appear here..."></textarea>
+        <div style="margin-top:10px; display:flex; gap:10px;">
+          <button class="btn" id="copyBtn">Copy Text</button>
+          <button class="btn" style="background:#fff; color:#111; border:1px solid #ddd;" onclick="document.getElementById('decodedText').value = ''">Clear</button>
+        </div>
+      </div>
+    </div>
+    
+    <footer>Developed by <a href="https://karrarnazim.space">Karrar Nazim.</a></footer>
+  </div>
+  
+  <script>
+    /* --------------------------------------------------------------------------
+       Logic: Reverse Engineering the Glyphs
+       -------------------------------------------------------------------------- */
+    
+    // 1. تعريف المواقع كما في الملف الأصلي للمقارنة
+    const POSITIONS = [
+      ['28%', '10%'],
+      ['50%', '10%'],
+      ['72%', '10%'],
+      ['88%', '28%'],
+      ['88%', '50%'],
+      ['88%', '72%'],
+      ['72%', '90%'],
+      ['50%', '90%'],
+      ['28%', '90%'],
+      ['10%', '72%'],
+      ['10%', '50%'],
+      ['10%', '28%']
+    ];
+    
+    // 2. خريطة الحروف الأصلية
+    const LETTERS = {
+      'A': [1, 6, 8],
+      'B': [0, 8, 10],
+      'C': [3, 5],
+      'D': [11, 4, 9],
+      'E': [3, 4, 5],
+      'F': [3, 4, 8],
+      'G': [3, 6],
+      'H': [0, 2, 6, 8],
+      'I': [1],
+      'J': [2, 9],
+      'K': [0, 3, 5, 8],
+      'L': [0, 5],
+      'M': [0, 2, 6, 7, 8],
+      'N': [2, 8],
+      'O': [],
+      'P': [8],
+      'Q': [7],
+      'R': [3, 6, 8],
+      'S': [3, 9],
+      'T': [3, 7, 11],
+      'U': [0, 2],
+      'V': [0, 2, 7],
+      'W': [0, 1, 2, 6, 8],
+      'X': [3, 5, 9, 11],
+      'Y': [0, 2, 7],
+      'Z': [0, 3, 9, 6],
+      ' ': []
+    };
+    
+    // 3. بناء خريطة عكسية ذكية (Signature + Color -> Character)
+    // الهيكل الجديد: REVERSE_MAP["0,2,7"] = { red: 'Y', black: 'V' }
+    const REVERSE_MAP = {};
+    
+    Object.keys(LETTERS).forEach(char => {
+      const dots = LETTERS[char];
+      // التوقيع هو سلسلة نصية مرتبة من الأرقام
+      const signature = dots.slice().sort((a, b) => a - b).join(',');
+      
+      // التحقق مما إذا كان الحرف أحمر (حسب منطق الكود الأصلي)
+      const isRedChar = (char === 'Y' || char === ' ');
+      
+      if (!REVERSE_MAP[signature]) {
+        REVERSE_MAP[signature] = { red: null, black: null };
+      }
+      
+      if (isRedChar) {
+        REVERSE_MAP[signature].red = char;
+      } else {
+        REVERSE_MAP[signature].black = char;
+      }
+    });
+    
+    /* Elements */
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const decodedText = document.getElementById('decodedText');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    const statusText = document.getElementById('statusText');
+    const copyBtn = document.getElementById('copyBtn');
+    
+    /* Events */
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) {
+        handleFile(e.target.files[0]);
+      }
+    });
+    
+    copyBtn.addEventListener('click', () => {
+      decodedText.select();
+      document.execCommand('copy');
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => copyBtn.textContent = 'Copy Text', 2000);
+    });
+    
+    /* دالة المعالجة الرئيسية */
+    function handleFile(file) {
+      if (file.type !== 'image/svg+xml' && !file.name.endsWith('.svg')) {
+        alert('Please upload a valid SVG file.');
+        return;
+      }
+      
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        const content = e.target.result;
+        parseSvgContent(content);
+      };
+      
+      statusText.textContent = 'Reading file...';
+      reader.readAsText(file);
+    }
+    
+    /* تحليل الـ SVG بطريقة ذكية وغير معلقة */
+    function parseSvgContent(svgString) {
+      statusText.textContent = 'Parsing XML...';
+      
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(svgString, "image/svg+xml");
+      
+      // البحث عن مجموعات الحروف
+      const glyphGroups = xmlDoc.querySelectorAll('g');
+      
+      if (glyphGroups.length === 0) {
+        alert('No glyphs found in this SVG. Make sure it was generated by LewisGlyph.');
+        statusText.textContent = '';
+        return;
+      }
+      
+      decodedText.value = '';
+      progressBar.style.display = 'block';
+      progressFill.style.width = '0%';
+      
+      const total = glyphGroups.length;
+      let processed = 0;
+      let resultString = [];
+      
+      const chunkSize = 100;
+      let currentIndex = 0;
+      
+      function processChunk() {
+        const end = Math.min(currentIndex + chunkSize, total);
+        
+        for (; currentIndex < end; currentIndex++) {
+          const group = glyphGroups[currentIndex];
+          const char = decodeGlyph(group);
+          resultString.push(char);
+        }
+        
+        processed = currentIndex;
+        const percentage = Math.round((processed / total) * 100);
+        progressFill.style.width = percentage + '%';
+        statusText.textContent = `Decoding: ${processed}/${total} glyphs`;
+        
+        if (currentIndex < total) {
+          requestAnimationFrame(processChunk);
+        } else {
+          decodedText.value = resultString.join('');
+          statusText.textContent = 'Done!';
+          progressBar.style.display = 'none';
+        }
+      }
+      
+      processChunk();
+    }
+    
+    /* دالة فك تشفير حرف واحد (تم تحسينها للتعامل مع الألوان) */
+    function decodeGlyph(groupElement) {
+      // 1. تحديد اللون (هل هو أحمر؟)
+      const rect = groupElement.querySelector('rect');
+      let isRed = false;
+      if (rect) {
+        const fill = (rect.getAttribute('fill') || '').trim().toUpperCase();
+        // اللون الأحمر المستخدم في الكود الأصلي هو #B55050
+        if (fill === '#B55050') {
+          isRed = true;
+        }
+      }
+      
+      // 2. العثور على النقاط وحساب مواقعها
+      const circles = groupElement.querySelectorAll('circle');
+      const foundIndices = [];
+      
+      circles.forEach(circle => {
+        const cx = parseFloat(circle.getAttribute('cx'));
+        const cy = parseFloat(circle.getAttribute('cy'));
+        
+        // مطابقة الإحداثيات مع POSITIONS
+        const index = getClosestPositionIndex(cx, cy);
+        if (index !== -1) {
+          foundIndices.push(index);
+        }
+      });
+      
+      // ترتيب النقاط لإنشاء التوقيع
+      foundIndices.sort((a, b) => a - b);
+      const signature = foundIndices.join(',');
+      
+      // 3. البحث في الخريطة العكسية مع مراعاة اللون
+      const matchEntry = REVERSE_MAP[signature];
+      
+      if (matchEntry) {
+        if (isRed && matchEntry.red !== null) {
+          return matchEntry.red; // (Y) أو (Space)
+        } else if (!isRed && matchEntry.black !== null) {
+          return matchEntry.black; // (V) أو (O) أو باقي الحروف
+        } else {
+          // حالة احتياطية: إذا لم يتطابق اللون لسبب ما، نعيد الموجود
+          return matchEntry.black || matchEntry.red || '?';
+        }
+      }
+      
+      return '?';
+    }
+    
+    /* دالة مساعدة للعثور على أقرب نقطة في الشبكة */
+    function getClosestPositionIndex(x, y) {
+      let minDist = Infinity;
+      let bestIndex = -1;
+      
+      // نحتاج تحويل النسب المئوية في POSITIONS إلى أرقام
+      // بما أن viewBox للمولد هو 0 0 100 100، فالنسبة المئوية هي نفسها الرقم
+      for (let i = 0; i < POSITIONS.length; i++) {
+        const targetX = parseFloat(POSITIONS[i][0]);
+        const targetY = parseFloat(POSITIONS[i][1]);
+        
+        // حساب المسافة
+        const dist = Math.sqrt(Math.pow(x - targetX, 2) + Math.pow(y - targetY, 2));
+        
+        // سماحية خطأ صغيرة (2 بكسل)
+        if (dist < 2.5) {
+          if (dist < minDist) {
+            minDist = dist;
+            bestIndex = i;
+          }
+        }
+      }
+      return bestIndex;
+    }
+  </script>
+</body>
+
+</html>
