@@ -82,7 +82,7 @@ function createGlyph(char, size = 80, small = false) {
   rect.setAttribute('width', 60);
   rect.setAttribute('height', 60);
   rect.setAttribute('rx', 0);
-  rect.setAttribute('fill', isRed ? '#B55050' : '#111'); // اللون الأحمر للمسافات
+  rect.setAttribute('fill', isRed ? '#B55050' : '#fff'); // اللون الأحمر للمسافات
   svg.appendChild(rect);
   
   // رسم النقاط
@@ -92,7 +92,7 @@ function createGlyph(char, size = 80, small = false) {
     c.setAttribute('cx', pos[0]);
     c.setAttribute('cy', pos[1]);
     c.setAttribute('r', 5.5);
-    c.setAttribute('fill', '#111');
+    c.setAttribute('fill', '#fff');
     svg.appendChild(c);
   });
   
@@ -197,7 +197,10 @@ document.getElementById('downloadSvg').addEventListener('click', () => {
   const totalWidth = txt.length * size;
   
   // بداية ملف الـ SVG  
-  let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${size}" viewBox="0 0 ${totalWidth} ${size}">`;
+let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${size}" viewBox="0 0 ${totalWidth} ${size}">`;
+
+// إضافة خلفية سوداء تغطي كامل الـ SVG
+svgContent += `<rect x="0" y="0" width="${totalWidth}" height="${size}" fill="#000" />`;
   
   // نقوم ببناء الـ XML يدوياً وهو أسرع بكثير من استنساخ العقد  
   for (let i = 0; i < txt.length; i++) {
@@ -210,7 +213,7 @@ document.getElementById('downloadSvg').addEventListener('click', () => {
     svgContent += `<g transform="translate(${offsetX}, 0)">`;
     
     // المربع  
-    svgContent += `<rect x="20" y="20" width="60" height="60" fill="${isRed ? '#B55050' : '#111'}" />`;
+    svgContent += `<rect x="20" y="20" width="60" height="60" fill="${isRed ? '#B55050' : '#fff'}" />`;
     
     // النقاط  
     dots.forEach(p => {
@@ -219,7 +222,7 @@ document.getElementById('downloadSvg').addEventListener('click', () => {
       // التنسيق في POSITIONS هو نسبة مئوية، نزيل %  
       const cx = parseFloat(pos[0]);
       const cy = parseFloat(pos[1]);
-      svgContent += `<circle cx="${cx}" cy="${cy}" r="5.5" fill="#111" />`;
+      svgContent += `<circle cx="${cx}" cy="${cy}" r="5.5" fill="#fff" />`;
     });
     
     svgContent += `</g>`;
@@ -266,7 +269,7 @@ document.getElementById('downloadPng').addEventListener('click', () => {
     const ctx = canvas.getContext('2d');
     
     // خلفية بيضاء للصورة بالكامل  
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // حلقة الرسم  
@@ -283,7 +286,7 @@ document.getElementById('downloadPng').addEventListener('click', () => {
       const offsetY = rowIndex * finalSize;
       
       // رسم المربع  
-      ctx.fillStyle = isRed ? '#B55050' : '#111';
+      ctx.fillStyle = isRed ? '#B55050' : '#fff';
       // الإحداثيات الأصلية 20، نضربها في scale ونضيف الإزاحة  
       ctx.fillRect(
         offsetX + (20 * scale),
@@ -293,7 +296,7 @@ document.getElementById('downloadPng').addEventListener('click', () => {
       );
       
       // رسم النقاط  
-      ctx.fillStyle = '#111';
+      ctx.fillStyle = '#fff';
       dots.forEach(p => {
         const pos = POSITIONS[p];
         // تحويل النسبة المئوية لقيمة رقمية  
