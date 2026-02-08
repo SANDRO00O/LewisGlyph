@@ -10,6 +10,7 @@
     
     
     * {
+      -webkit-tap-highlight-color: transparent;
       box-sizing: border-box;
       margin: 0;
       padding: 0;
@@ -18,16 +19,46 @@
     
     html,
     body {
-      height: 100%;
+      width: 100%;
       background: var(--bg);
       color: var(--fg);
-      margin: 0;
+      overflow-x: hidden;
+    }
+    
+    .top-header {
+      width: 100%;
+      padding: 0.5rem;
+      background: #CDC200;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .top-header img{
+      width: 60px;
+    }
+    
+    .tran {
+      border: 1.5px solid #000;
+      padding: 0.5rem;
+      font-size: 0.8rem;
+      transition: none;
+    }
+    
+    .tran:hover{
+      background-color: #B55050;
+      user-select: none;
+    }
+    
+    .top-header a{
+      text-decoration: none;
+      color: #000000;
     }
     
     .wrap {
       max-width: 1100px;
       margin: 28px auto;
-      padding: 24px
+      padding: 1rem
     }
     
     header {
@@ -110,12 +141,15 @@
     
     
     .row {
+      width: 100%;
       display: flex;
+      align-items: center;
       gap: 8px
     }
     
     .btn {
-      padding: 10px 12px;
+      width: 100%;
+      padding: 0.8rem 1rem;
       border: 0;
       background: #111;
       color: #fff;

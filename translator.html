@@ -21,6 +21,7 @@
     }
     
     * {
+      -webkit-tap-highlight-color: transparent;
       box-sizing: border-box;
       margin: 0;
       padding: 0;
@@ -32,6 +33,37 @@
       height: 100%;
       background: var(--bg);
       color: var(--fg);
+    }
+    
+    .top-header {
+      width: 100%;
+      padding: 0.5rem;
+      background: #CDC200;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .top-header img {
+      width: 60px;
+    }
+    
+    .tran {
+      border: 1.5px solid #000;
+      padding: 0.5rem;
+      font-size: 0.8rem;
+    }
+    
+    .tran:hover {
+      background-color: #B55050;
+      user-select: none;
+    }
+    
+    .top-header a {
+      text-decoration: none;
+      color: #000000;
+      transition: none;
+      
     }
     
     .wrap {
@@ -72,7 +104,6 @@
       padding: 18px;
       background: var(--card-bg);
       border-radius: 4px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     }
     
     .controls {
@@ -136,7 +167,7 @@
       border: 1px solid #ddd;
       border-radius: 5px;
       font-family: inherit;
-      font-size: 16px;
+      font-size: 12px;
       white-space: pre-wrap;
       background: #fdfdfd;
       color: #333;
@@ -179,6 +210,11 @@
 </head>
 
 <body>
+  <div class="top-header">
+    <img src="assets/images/LewisGlyph_logored.svg" alt="LewisGlyph logo" />
+    
+    <a class="tran" href="/">Home</a>
+  </div>
   <div class="wrap">
     <header>
       <div class="block">
@@ -192,7 +228,7 @@
       <div class="panel">
         <div class="controls">
           <div class="upload-zone" id="dropZone">
-            <p>Click to upload <b>LewisGlyph_output.svg</b> or drag it here</p>
+            <p>Click to upload <b>LewisGlyph.svg</b> or drag it here</p>
             <input type="file" id="fileInput" accept=".svg">
           </div>
           
