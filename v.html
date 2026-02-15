@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Batch Voice Generator (from narrator_prompts.zip)</title>
+  <style>
+    body{margin:24px;font-family:system-ui;background:#0b0f14;color:#e8eef6}
+    .wrap{max-width:900px;margin:0 auto}
+    .card{background:#121a24;border:1px solid #233041;border-radius:10px;padding:16px;margin:12px 0}
+    label{display:block;margin:10px 0 6px;color:#b8c4d2;font-size:13px}
+    input[type="text"],input[type="password"],input[type="number"]{
+      width:100%;padding:10px;border-radius:8px;border:1px solid #2a3a50;background:#0b0f14;color:#e8eef6
+    }
+    input[type="file"]{width:100%}
+    button{padding:10px 14px;border-radius:8px;border:1px solid #2a3a50;background:#1b2a3d;color:#e8eef6;cursor:pointer;font-weight:600}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    pre{white-space:pre-wrap;background:#0b0f14;border:1px solid #233041;border-radius:8px;padding:10px;height:240px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .row>div{flex:1;min-width:240px}
+    .small{font-size:12px;color:#9fb0c3}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MagicHour Batch Voice (from narrator_prompts.zip)</h1>
+  <p class="small">Reads narrator_prompts/manifest.csv from the ZIP you received, then generates audio for every line and downloads a ZIP of audio files.</p>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>MagicHour API Key</label>
+        <input id="apiKey" type="password" placeholder="Bearer key" autocomplete="off" />
+      </div>
+      <div>
+        <label>Concurrency (1–3)</label>
+        <input id="conc" type="number" min="1" max="3" value="2" />
+      </div>
+    </div>
+
+    <label>Voice sample (your .m4a/.mp3/.wav)</label>
+    <input id="voice" type="file" accept="audio/*" />
+
+    <label>narrator_prompts.zip (the file I gave you)</label>
+    <input id="zip" type="file" accept=".zip,application/zip" />
+
+    <div class="row" style="margin-top:12px;align-items:center;">
+      <button id="go">Generate All + Download ZIP</button>
+      <button id="stop" disabled>Stop</button>
+      <span id="status" class="small"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Logs</label>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+<script>
+(() => {
+  // If MagicHour base differs for you, change it here.
+  const API_BASE = "https://api.magichour.ai";
+
+  const el = (id) => document.getElementById(id);
+  const logEl = el("log");
+  const statusEl = el("status");
+  const goBtn = el("go");
+  const stopBtn = el("stop");
+
+  let abort = false;
+
+  function log(msg){
+    logEl.textContent += `${new Date().toISOString()} ${msg}\n`;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function setStatus(s){ statusEl.textContent = s; }
+
+  function sanitize(name){
+    return String(name || "line")
+      .trim()
+      .replace(/[^\w\-\.]+/g, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 120) || "line";
+  }
+
+  function getExt(file){
+    const m = (file?.name || "").match(/\.([a-zA-Z0-9]+)$/);
+    return (m ? m[1] : "m4a").toLowerCase();
+  }
+
+  // --- CSV parser (supports quoted commas minimally) ---
+  function parseCSV(csvText){
+    const lines = csvText.split(/\r?\n/).filter(l => l.trim().length);
+    if (!lines.length) throw new Error("manifest.csv is empty");
+
+    const header = splitCSVLine(lines.shift()).map(s => s.trim());
+    const iName = header.indexOf("filename_base");
+    const iText = header.indexOf("text");
+    if (iName === -1 || iText === -1) {
+      throw new Error("manifest.csv must include columns: filename_base,text");
+    }
+
+    const rows = [];
+    for (const line of lines) {
+      const cols = splitCSVLine(line);
+      const name = (cols[iName] || "").trim();
+      const text = (cols[iText] || "").trim();
+      if (!name || !text) continue;
+      rows.push({ name: sanitize(name), text });
+    }
+    return rows;
+  }
+
+  function splitCSVLine(line){
+    // basic RFC-ish: handles commas inside quotes
+    const out = [];
+    let cur = "", inQ = false;
+    for (let i=0;i<line.length;i++){
+      const ch = line[i];
+      if (ch === '"' ) {
+        if (inQ && line[i+1] === '"'){ cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        out.push(cur);
+        cur = "";
+      } else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  }
+
+  async function mhFetch(path, { method="GET", headers={}, body=null } = {}){
+    const key = el("apiKey").value.trim();
+    if (!key) throw new Error("Missing API key");
+    const res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: { "Authorization": `Bearer ${key}`, ...headers },
+      body
+    });
+    const t = await res.text();
+    let j = null;
+    try { j = t ? JSON.parse(t) : null; } catch(_){}
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${path}: ${j ? JSON.stringify(j) : t}`);
+    return j;
+  }
+
+  // NOTE: endpoints/shape may differ depending on MagicHour API version.
+  // If you get a 404 here, tell me the error response and I’ll adapt it.
+  async function requestUploadUrl(extension) {
+  // Magic Hour: POST /v1/files/upload-urls
+  // Body: { items: [ { type: "audio", extension: "m4a" } ] }
+  const payload = { items: [{ type: "audio", extension }] };
+  
+  const data = await mhFetch("/v1/files/upload-urls", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  
+  // Response: { items: [ { upload_url, expires_at, file_path }, ... ] }
+  const first = data?.items?.[0];
+  const upload_url = first?.upload_url;
+  const file_path = first?.file_path;
+  
+  if (!upload_url || !file_path) {
+    throw new Error("Upload URLs response missing upload_url/file_path");
+  }
+  
+  return { upload_url, file_path };
+}
+
+  async function putPresigned(upload_url, file){
+    const r = await fetch(upload_url, { method: "PUT", body: file });
+    if (!r.ok) throw new Error(`PUT upload failed: HTTP ${r.status}`);
+  }
+
+  async function createVoiceClone(audio_file_path, text, name){
+    const payload = {
+      name,
+      assets: { audio_file_path },
+      style: { prompt: text }
+    };
+    const data = await mhFetch("/v1/ai-voice-cloner", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!data?.id) throw new Error("ai-voice-cloner response missing id");
+    return data.id;
+  }
+
+  async function pollComplete(id){
+    const start = Date.now();
+    const timeoutMs = 10 * 60 * 1000;
+    while(true){
+      if (abort) throw new Error("Aborted by user");
+      if (Date.now() - start > timeoutMs) throw new Error(`Timeout waiting id=${id}`);
+
+      const data = await mhFetch(`/v1/audio-projects/${encodeURIComponent(id)}`);
+      const st = data?.status;
+      if (st === "complete"){
+        const url = data?.downloads?.[0]?.url || data?.downloads?.url;
+        if (!url) throw new Error(`Complete but no download url for id=${id}`);
+        return url;
+      }
+      if (st === "error") throw new Error(`Project error id=${id}: ${JSON.stringify(data?.error || {})}`);
+      await new Promise(r => setTimeout(r, 1300));
+    }
+  }
+
+  async function downloadBuf(url){
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Download failed HTTP ${r.status}`);
+    return await r.arrayBuffer();
+  }
+
+  async function runQueue(items, workers, workerFn){
+    let idx = 0;
+    const results = new Array(items.length);
+    const pool = Array.from({ length: workers }, async () => {
+      while(true){
+        if (abort) return;
+        const i = idx++;
+        if (i >= items.length) return;
+        results[i] = await workerFn(items[i], i);
+      }
+    });
+    await Promise.all(pool);
+    return results;
+  }
+
+  async function readManifestFromZip(zipFile){
+    const zip = await JSZip.loadAsync(zipFile);
+    // We stored it as narrator_prompts/manifest.csv inside the ZIP.
+    const entry = zip.file("narrator_prompts/manifest.csv") || zip.file(/manifest\.csv$/i)[0];
+    if (!entry) throw new Error("manifest.csv not found in ZIP");
+    const csvText = await entry.async("text");
+    return parseCSV(csvText);
+  }
+
+  async function main(){
+    abort = false;
+    logEl.textContent = "";
+
+    const voice = el("voice").files?.[0];
+    const zipFile = el("zip").files?.[0];
+    const conc = Math.max(1, Math.min(3, parseInt(el("conc").value || "2", 10)));
+
+    if (!voice) throw new Error("Pick your voice sample file");
+    if (!zipFile) throw new Error("Pick narrator_prompts.zip");
+
+    goBtn.disabled = true;
+    stopBtn.disabled = false;
+
+    setStatus("Reading manifest.csv from ZIP...");
+    const rows = await readManifestFromZip(zipFile);
+    log(`Loaded ${rows.length} lines from manifest.csv`);
+
+    setStatus("Requesting upload URL...");
+    const up = await requestUploadUrl(getExt(voice));
+    log(`Got file_path=${up.file_path}`);
+
+    setStatus("Uploading voice sample...");
+    await putPresigned(up.upload_url, voice);
+    log("Voice sample uploaded.");
+
+    const audio_file_path = up.file_path;
+
+    const outZip = new JSZip();
+    let done = 0;
+
+    setStatus(`Generating ${rows.length} clips (concurrency=${conc})...`);
+
+    await runQueue(rows, conc, async (row, i) => {
+      const label = `${i+1}/${rows.length} ${row.name}`;
+      log(`Create: ${label}`);
+      const id = await createVoiceClone(audio_file_path, row.text, `narrator/${row.name}`);
+      log(`  id=${id}`);
+
+      const dl = await pollComplete(id);
+      log(`  ready: ${label}`);
+
+      const buf = await downloadBuf(dl);
+
+      // default extension (wav) — if the service returns mp3, you can change this.
+      outZip.file(`${row.name}.wav`, buf);
+
+      done++;
+      setStatus(`Progress: ${done}/${rows.length}`);
+    });
+
+    setStatus("Packing ZIP...");
+    const blob = await outZip.generateAsync({ type: "blob" });
+    saveAs(blob, `narrator_audio_${Date.now()}.zip`);
+
+    log("DONE. ZIP downloaded.");
+    setStatus("Done.");
+    goBtn.disabled = false;
+    stopBtn.disabled = true;
+  }
+
+  el("go").addEventListener("click", async () => {
+    try { await main(); }
+    catch(e){
+      log(`ERROR: ${e.message || e}`);
+      setStatus("Failed. Check logs.");
+      goBtn.disabled = false;
+      stopBtn.disabled = true;
+      abort = false;
+    }
+  });
+
+  el("stop").addEventListener("click", () => {
+    abort = true;
+    log("Abort requested.");
+    setStatus("Stopping...");
+    goBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+})();
+</script>
+</body>
+</html>
